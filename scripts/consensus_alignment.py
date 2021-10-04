@@ -3,19 +3,14 @@
 # Author: Kat Holt (kholt@unimelb.edu.au)
 
 # modules
-import string, re, collections
-import os, sys, subprocess
-from argparse import ArgumentParser, FileType
+from argparse import ArgumentParser
 
 # BioPython modules for reading and writing sequences
 from Bio import SeqIO
-from Bio.Seq import Seq
-from Bio.SeqRecord import SeqRecord
-from Bio.Alphabet import IUPAC
 
 
 def parse_args():
-    "Parse the input arguments, use '-h' for help."
+    """Parse the input arguments, use '-h' for help."""
 
     parser = ArgumentParser(description="SRST2 - Short Read Sequence Typer (v2)")
 
@@ -36,7 +31,8 @@ def parse_args():
         type=str,
         required=False,
         default="-",
-        help='For MLST seqs, specifcy the character(s) separating gene name from allele number in MLST database (default "-", as in arcc-1)',
+        help='For MLST seqs, specifcy the character(s) separating gene name from '
+             'allele number in MLST database (default "-", as in arcc-1)',
     )
 
     return parser.parse_args()
@@ -53,6 +49,7 @@ def main():
             x = record.description  # locus strain
             strain = x.split()[1]
             locus = x.split()[0]
+            locus_id = None
             if args.type == "mlst":
                 locus_id = locus.split(args.mlst_delimiter)[0]
                 allele = locus

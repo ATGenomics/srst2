@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 """
-Download MLST datasets from this site: http://pubmlst.org/data/ by
-parsing an xml file (http://pubmlst.org/data/dbases.xml).
+Download MLST datasets from this site: https://pubmlst.org/data/ by
+parsing an xml file (https://pubmlst.org/data/dbases.xml).
 
 Data is downloaded for a species determined by the user:
 - profiles (maps STs to allele numbers)
@@ -22,7 +22,9 @@ try again.
 from argparse import ArgumentParser
 import xml.dom.minidom as xml
 import urllib2 as url
-import re, os, glob
+import re
+import os
+import glob
 from urllib.parse import urlparse
 
 
@@ -34,7 +36,7 @@ def parse_args():
     parser.add_argument(
         "--repository_url",
         metavar="URL",
-        default="http://pubmlst.org/data/dbases.xml",
+        default="https://pubmlst.org/data/dbases.xml",
         help="URL for MLST repository XML index",
     )
 

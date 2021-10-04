@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Python Version 2.7.5
+# Python Version 3.8
 #
 # Basic analysis of SRST2 output
 # Authors - Kathryn Holt (kholt@unimelb.edu.au)
@@ -8,19 +8,16 @@
 # Dependencies:
 # 	R
 
-from argparse import ArgumentParser, FileType
+from argparse import ArgumentParser
 import logging
-from subprocess import call, check_output, CalledProcessError, STDOUT
-import os, sys, re, collections, operator
-from scipy.stats import binom_test, linregress
-from math import log
-from itertools import groupby
-from operator import itemgetter
+import sys
+import collections
+import operator
 from collections import OrderedDict
 
 
 def parse_args():
-    "Parse the input arguments, use '-h' for help"
+    """Parse the input arguments, use '-h' for help"""
 
     parser = ArgumentParser(description="Basic analysis of SRST2 output")
 

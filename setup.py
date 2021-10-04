@@ -4,7 +4,7 @@ from distutils.core import setup
 
 setup(
     name='srst2',
-    version='0.2.0',
+    version='0.2.1',
     author='Kathryn Holt',
     author_email='drkatholt@gmail.com',
     packages=['srst2'],
@@ -14,7 +14,7 @@ setup(
     },
     package_dir = {'srst2': 'scripts'},
     package_data={'srst2': ['data/resistance.*']},
-    url='http://katholt.github.io/srst2/',
+    url='https://katholt.github.io/srst2/',
     license='LICENSE.txt',
     description='Short Read Sequence Typing for Bacterial Pathogens',
     long_description=('This program is designed to take Illumina'
@@ -28,7 +28,7 @@ setup(
         # any Python installing system, such as pip or easy_install.
         # So we assume the user has already installed the dependencies
         # themselves.
-        #"numpy >= 1.7.1",
-        #"scipy >= 0.12.0",
+        # "numpy >= 1.7.1",
+        # "scipy >= 0.12.0",
     ],
 )

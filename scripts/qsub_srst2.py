@@ -17,7 +17,7 @@ import logging
 
 
 def parse_args():
-    "Parse the input arguments, use '-h' for help"
+    """Parse the input arguments, use '-h' for help"""
 
     parser = ArgumentParser(description="Submit SRST2 jobs through Grid Engine (qsub)")
 
@@ -30,7 +30,9 @@ def parse_args():
     )
 
     # SRST2 inputs
-    # script argument removed .. mystified by its inclusion, its the main srst2 executable, with the py extension dropped (which is what the modern version of srst2 did)
+    # script argument removed .. mystified by its inclusion, its the main
+    # srst2 executable, with the py extension dropped (which is what
+    # the modern version of srst2 did)
     parser.add_argument(
         "--output",
         type=str,
@@ -59,20 +61,25 @@ def parse_args():
         type=str,
         required=False,
         default="_1",
-        help="Designator for forward reads (only used if NOT in MiSeq format sample_S1_L001_R1_001.fastq.gz; otherwise default is _1, i.e. expect forward reads as sample_1.fastq.gz)",
+        help="Designator for forward reads (only used if NOT in MiSeq format "
+             "sample_S1_L001_R1_001.fastq.gz; otherwise default is _1, "
+             "i.e. expect forward reads as sample_1.fastq.gz)",
     )
     parser.add_argument(
         "--reverse",
         type=str,
         required=False,
         default="_2",
-        help="Designator for reverse reads (only used if NOT in MiSeq format sample_S1_L001_R2_001.fastq.gz; otherwise default is _2, i.e. expect forward reads as sample_2.fastq.gz)",
+        help="Designator for reverse reads (only used if NOT in MiSeq "
+             "format sample_S1_L001_R2_001.fastq.gz; otherwise default "
+             "is _2, i.e. expect forward reads as sample_2.fastq.gz)",
     )
     parser.add_argument(
         "--other_args",
         type=str,
         required=True,
-        help="single string (i.e. surround with quotes) containing all other arguments as they would be passed to normal (serial) srst2",
+        help="single string (i.e. surround with quotes) containing all "
+             "other arguments as they would be passed to normal (serial) srst2",
     )
 
     return parser.parse_args()
@@ -137,7 +144,8 @@ def read_file_sets(args):
                             + fastq
                         )
             else:
-                # matches default Illumina file naming format, e.g. m.groups() = ('samplename', '_S1', '_L001', '_R1', '_001')
+                # matches default Illumina file naming format,
+                # e.g. m.groups() = ('samplename', '_S1', '_L001', '_R1', '_001')
                 baseName, read = m.groups()[0], m.groups()[3]
                 if read == "_R1":
                     forward_reads[baseName] = fastq
@@ -149,7 +157,9 @@ def read_file_sets(args):
                         + fastq
                     )
                     print(
-                        "  this file appears to match the MiSeq file naming convention (samplename_S1_L001_[R1]_001), but we were expecting [R1] or [R2] to designate read as forward or reverse?"
+                        "  this file appears to match the MiSeq file naming convention"
+                        " (samplename_S1_L001_[R1]_001), but we were expecting [R1] "
+                        "or [R2] to designate read as forward or reverse?"
                     )
                     fileSets[file_name_before_ext] = fastq
                     num_single_readsets += 1
@@ -184,7 +194,7 @@ class CommandError(Exception):
 
 
 def run_command(command, **kwargs):
-    "Execute a shell command and check the exit status and any O/S exceptions"
+    """Execute a shell command and check the exit status and any O/S exceptions"""
     command_str = " ".join(command)
     print("Running: {}".format(command_str))
     try:
@@ -358,7 +368,8 @@ def main():
         echocmdproc = subprocess.Popen(echo_for_cmd, stdout=subprocess.PIPE)
         out = subprocess.check_output("qsub", stdin=echocmdproc.stdout)
         echocmdproc.wait()
-        # os.system('echo "' + cmd + '" | sbatch') # old slurm script command. Notice how and echo fot he command was also needed.
+        # os.system('echo "' + cmd + '" | sbatch') # old slurm script command.
+        # Notice how and echo fot he command was also needed.
 
 
 if __name__ == "__main__":

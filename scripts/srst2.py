@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # SRST2 - Short Read Sequence Typer (v2)
-# Python Version 2.7.5
+# Python Version 3.8
 #
 # Authors - Michael Inouye (minouye@unimelb.edu.au), Harriet Dashnow (h.dashnow@gmail.com),
 # 	Kathryn Holt (kholt@unimelb.edu.au), Bernie Pope (bjpope@unimelb.edu.au)
@@ -10,7 +10,8 @@
 #
 # Dependencies:
 # 	bowtie2	   http://bowtie-bio.sourceforge.net/bowtie2/index.shtml version 2.1.0 or greater
-# 	SAMtools   http://samtools.sourceforge.net Version: 0.1.18 or greater (note optimal results are obtained with 0.1.18 rather than later versions)
+# 	SAMtools   http://samtools.sourceforge.net Version: 0.1.18 or greater
+# 	(note optimal results are obtained with 0.1.18 rather than later versions)
 # 	SciPy	http://www.scipy.org/install.html
 #
 # Git repository: https://github.com/katholt/srst2/
@@ -19,10 +20,14 @@
 # Paper: http://genomemedicine.com/content/6/11/90
 
 
-from argparse import ArgumentParser, FileType
+from argparse import ArgumentParser
 import logging
 from subprocess import call, check_output, CalledProcessError, STDOUT
-import os, sys, re, collections, operator
+import os
+import sys
+import re
+import collections
+import operator
 from scipy.stats import binom, linregress
 from math import log
 from itertools import groupby
@@ -38,7 +43,7 @@ edge_a = edge_z = 2
 
 
 def parse_args():
-    "Parse the input arguments, use '-h' for help."
+    """Parse the input arguments, use '-h' for help."""
 
     parser = ArgumentParser(description="SRST2 - Short Read Sequence Typer (v2)")
 
@@ -66,28 +71,34 @@ def parse_args():
         "--merge_paired",
         action="store_true",
         required=False,
-        help="Switch on if all the input read sets belong to a single sample, and you want to merge their data to get a single result",
+        help="Switch on if all the input read sets belong to a single "
+             "sample, and you want to merge their data to get a single result",
     )
     parser.add_argument(
         "--forward",
         type=str,
         required=False,
         default="_1",
-        help="Designator for forward reads (only used if NOT in MiSeq format sample_S1_L001_R1_001.fastq.gz; otherwise default is _1, i.e. expect forward reads as sample_1.fastq.gz)",
+        help="Designator for forward reads (only used if NOT in MiSeq format "
+             "sample_S1_L001_R1_001.fastq.gz; otherwise default is _1, "
+             "i.e. expect forward reads as sample_1.fastq.gz)",
     )
     parser.add_argument(
         "--reverse",
         type=str,
         required=False,
         default="_2",
-        help="Designator for reverse reads (only used if NOT in MiSeq format sample_S1_L001_R2_001.fastq.gz; otherwise default is _2, i.e. expect forward reads as sample_2.fastq.gz",
+        help="Designator for reverse reads (only used if NOT in MiSeq "
+             "format sample_S1_L001_R2_001.fastq.gz; otherwise default "
+             "is _2, i.e. expect forward reads as sample_2.fastq.gz",
     )
     parser.add_argument(
         "--read_type",
         type=str,
         choices=["q", "qseq", "f"],
         default="q",
-        help="Read file type (for bowtie2; default is q=fastq; other options: qseq=solexa, f=fasta).",
+        help="Read file type (for bowtie2; default is q=fastq; other "
+             "options: qseq=solexa, f=fasta).",
     )
 
     # MLST parameters
@@ -102,14 +113,16 @@ def parse_args():
         "--mlst_delimiter",
         type=str,
         required=False,
-        help='Character(s) separating gene name from allele number in MLST database (default "-", as in arcc-1)',
+        help='Character(s) separating gene name from allele number in '
+             'MLST database (default "-", as in arcc-1)',
         default="-",
     )
     parser.add_argument(
         "--mlst_definitions",
         type=str,
         required=False,
-        help="ST definitions for MLST scheme (required if mlst_db supplied and you want to calculate STs)",
+        help="ST definitions for MLST scheme (required if mlst_db "
+             "supplied and you want to calculate STs)",
     )
     parser.add_argument(
         "--mlst_max_mismatch",
@@ -138,7 +151,8 @@ def parse_args():
         type=str,
         required=False,
         default="10",
-        help="Maximum number of mismatches per read for gene detection and allele calling (default 10)",
+        help="Maximum number of mismatches per read for gene detection "
+             "and allele calling (default 10)",
     )
 
     # Cutoffs for scoring/heuristics
@@ -193,7 +207,7 @@ def parse_args():
     parser.add_argument(
         "--other",
         type=str,
-        help='Other arguments to pass to bowtie2 (must be escaped, e.g. "\--no-mixed".',
+        help='Other arguments to pass to bowtie2 (must be escaped, e.g. "--no-mixed".',
         required=False,
     )
 
@@ -216,7 +230,7 @@ def parse_args():
     parser.add_argument(
         "--samtools_args",
         type=str,
-        help='Other arguments to pass to samtools mpileup (must be escaped, e.g. "\-A").',
+        help='Other arguments to pass to samtools mpileup (must be escaped, e.g. "-A").',
         required=False,
     )
 
@@ -240,13 +254,15 @@ def parse_args():
         "--report_new_consensus",
         action="store_true",
         required=False,
-        help="If a matching alleles is not found, report the consensus allele. Note, only SNP differences are considered, not indels.",
+        help="If a matching alleles is not found, report the consensus allele. "
+             "Note, only SNP differences are considered, not indels.",
     )
     parser.add_argument(
         "--report_all_consensus",
         action="store_true",
         required=False,
-        help="Report the consensus allele for the most likely allele. Note, only SNP differences are considered, not indels.",
+        help="Report the consensus allele for the most likely allele. Note, "
+             "only SNP differences are considered, not indels.",
     )
 
     # Run options
@@ -254,7 +270,8 @@ def parse_args():
         "--use_existing_bowtie2_sam",
         action="store_true",
         required=False,
-        help="Use existing SAM file generated by Bowtie2 if available, otherwise they will be generated",
+        help="Use existing SAM file generated by Bowtie2 if available, "
+             "otherwise they will be generated",
     )  # to facilitate testing of filtering Bowtie2 output
     parser.add_argument(
         "--use_existing_pileup",
@@ -273,7 +290,8 @@ def parse_args():
         action="store_true",
         required=False,
         default=False,
-        help="Keep interim files (sam & unsorted bam), otherwise they will be deleted after sorted bam is created",
+        help="Keep interim files (sam & unsorted bam), otherwise they will be "
+             "deleted after sorted bam is created",
     )  # to facilitate testing of sam processing
     parser.add_argument(
         "--threads",
@@ -282,8 +300,11 @@ def parse_args():
         default=1,
         help="Use multiple threads in Bowtie and Samtools",
     )
-    # 	parser.add_argument('--keep_final_alignment', action="store_true", required=False, default=False,
-    # 		help='Keep interim files (sam & unsorted bam), otherwise they will be deleted after sorted bam is created') # to facilitate testing of sam processing
+    # 	parser.add_argument('--keep_final_alignment', action="store_true",
+    # 	required=False, default=False,
+    # 		help='Keep interim files (sam & unsorted bam),
+    # 		otherwise they will be deleted after sorted bam is created')
+    #       to facilitate testing of sam processing
 
     # Compile previous output files
     parser.add_argument(
@@ -291,7 +312,8 @@ def parse_args():
         nargs="+",
         type=str,
         required=False,
-        help="SRST2 results files to compile (any new results from this run will also be incorporated)",
+        help="SRST2 results files to compile (any new results from this "
+             "run will also be incorporated)",
     )
 
     return parser.parse_args()
@@ -319,7 +341,7 @@ def run_command(command, **kwargs):
 
 
 def bowtie_index(fasta_files):
-    "Build a bowtie2 index from the given input fasta(s)"
+    """Build a bowtie2 index from the given input fasta(s)"""
     check_bowtie_version()
     for fasta in fasta_files:
         built_index = fasta + ".1.bt2"
@@ -331,8 +353,8 @@ def bowtie_index(fasta_files):
 
 
 def get_clips_cigar(cigar):
-    ## remove padding first if present;
-    ## maybe padding is never present at the edges, but it is easier to just remove
+    # remove padding first if present;
+    # maybe padding is never present at the edges, but it is easier to just remove
     cigar = re.sub(r"\d+P", "", cigar.strip())
     x = re.search(r"^(?P<length>\d+)(?P<type>[SH])", cigar)
     if x:
@@ -347,7 +369,6 @@ def get_clips_cigar(cigar):
         right_clip["length"] = int(right_clip["length"])
     else:
         right_clip = dict(length=0, type=None)
-
     return (left_clip, right_clip)
 
 
@@ -364,26 +385,26 @@ def get_unaligned_read_end_lengths_sam(fields, ref_len):
     left_res = 0
     right_res = 0
     if len(fields) >= 10:
-        ## get (clipped) start position
+        # get (clipped) start position
         ali_clipped_start = int(fields[3])
         cigar = fields[5]
-        ## get number and types of clipped bases on the left and right
+        # get number and types of clipped bases on the left and right
         left_clip, right_clip = get_clips_cigar(cigar)
         left_res = min(ali_clipped_start, left_clip["length"])
         seq_start = ali_clipped_start
         if left_clip["type"] and left_clip["type"] == "S":
             seq_start -= left_clip["length"]
-        ## get (hard-clipped) end position as start + len(seq)
+        # get (hard-clipped) end position as start + len(seq)
         seq_hard_clipped_end = seq_start + len(fields[9]) + get_end_shift_cigar(cigar)
-        ## seq end = hard end + right hard clip
+        # seq end = hard end + right hard clip
         seq_end = seq_hard_clipped_end
         if right_clip["type"] and right_clip["type"] == "H":
             seq_end += right_clip["length"]
-        ## aligned end = hard end - right soft clip
+        # aligned end = hard end - right soft clip
         ali_clipped_end = seq_hard_clipped_end
         if right_clip["type"] and right_clip["type"] == "S":
             ali_clipped_end -= right_clip["length"]
-        ## right result = min(ref_len,right read end) - right aligned end
+        # right result = min(ref_len,right read end) - right aligned end
         right_res = min(ref_len, seq_end) - ali_clipped_end
     return (left_res, right_res)
 
@@ -419,7 +440,8 @@ def modify_bowtie_sam(raw_bowtie_sam, max_mismatch, max_unaligned_overlap):
                     left_unali > max_unaligned_overlap
                     or right_unali > max_unaligned_overlap
                 ):
-                    # logging.debug("Excluding read from SAM file due to too long unaligned end overlapping the reference: {}".format(line))
+                    # logging.debug("Excluding read from SAM file due to
+                    # too long unaligned end overlapping the reference: {}".format(line))
                     continue
                 flag = int(fields[1])
                 flag = (flag - 256) if (flag & 256) else flag
@@ -442,7 +464,7 @@ def modify_bowtie_sam(raw_bowtie_sam, max_mismatch, max_unaligned_overlap):
 
 
 def parse_fai(fai_file, db_type, delimiter):
-    "Get sequence lengths for reference alleles - important for scoring"
+    """Get sequence lengths for reference alleles - important for scoring"""
     "Get gene names also, required if no MLST definitions provided"
     size = {}
     gene_clusters = []  # for gene DBs, this is cluster ID
@@ -544,7 +566,8 @@ def read_pileup_data(pileup_file, size, prob_err, consensus_file=""):
             depth_a = depth_z = 0
             position_depths = [
                 0
-            ] * allele_size  # store depths in case required for penalties; then we don't need to track total_missing_bases
+            ] * allele_size
+            # store depths in case required for penalties; then we don't need to track total_missing_bases
             hash_alignment[allele] = []
             total_missing_bases = 0
             total_mismatch = 0
@@ -889,6 +912,7 @@ def score_alleles(
 def check_command_version(
     command_list, version_identifier, command_name, required_version
 ):
+    command_stdout = None
     try:
         command_stdout = check_output(command_list, stderr=STDOUT)
     except OSError as e:
@@ -958,7 +982,7 @@ def check_command_versions(
 
 
 def get_bowtie_execs():
-    'Return the "best" bowtie2 executables'
+    """Return the "best" bowtie2 executables"""
 
     exec_from_environment = os.environ.get("SRST2_BOWTIE2")
     if exec_from_environment and os.path.isfile(exec_from_environment):
@@ -981,12 +1005,9 @@ def get_bowtie_execs():
 
 
 def run_bowtie(mapping_files_pre, sample_name, fastqs, args, db_name, db_full_path):
-
     logging.info("Starting mapping with bowtie2")
-
     check_bowtie_version()
     check_samtools_version()
-
     command = [get_bowtie_execs()[0]]
 
     if len(fastqs) == 1:
@@ -1019,7 +1040,9 @@ def run_bowtie(mapping_files_pre, sample_name, fastqs, args, db_name, db_full_pa
             print(
                 "WARNING. You asked to stop after mapping '"
                 + args.stop_after
-                + "' reads. I don't understand this, and will map all reads. Please speficy an integer with --stop_after or leave this as default to map 1 million reads."
+                + "' reads. I don't understand this, and will map all reads."
+                  " Please speficy an integer with --stop_after or leave this "
+                  "as default to map 1 million reads."
             )
 
     if args.other:
@@ -1032,14 +1055,13 @@ def run_bowtie(mapping_files_pre, sample_name, fastqs, args, db_name, db_full_pa
 
     else:
         logging.info("Aligning reads to index {} using bowtie2...".format(db_full_path))
-
         run_command(command)
 
     return sam
 
 
 def get_samtools_exec():
-    'Return the "best" samtools executable'
+    """Return the "best" samtools executable"""
 
     exec_from_environment = os.environ.get("SRST2_SAMTOOLS")
     if exec_from_environment and os.path.isfile(exec_from_environment):
@@ -1162,7 +1184,8 @@ def calculate_ST(
         allele_with_flags = allele_number
         if diffs != "":
             if diffs != "trun":
-                allele_with_flags += "*"  # trun indicates only that a truncated form had lower score, which isn't a mismatch
+                allele_with_flags += "*"
+                # trun indicates only that a truncated form had lower score, which isn't a mismatch
             mismatch_flags.append(allele + "/" + diffs)
         if depth_problem != "":
             allele_with_flags += "?"
@@ -1255,7 +1278,8 @@ def parse_ST_database(ST_filename, gene_names_from_fai):
                             + ",".join(gene_names)
                         )
                         print(
-                            " Any sequences with this gene identifer from the database will not be included in typing."
+                            " Any sequences with this gene identifer from the database will "
+                            "not be included in typing."
                         )
                         if len(line_split) == num_gene_cols_expected + 1:
                             gene_names.pop()  # we read too many columns
@@ -1269,7 +1293,8 @@ def parse_ST_database(ST_filename, gene_names_from_fai):
                             + ",".join(gene_names_from_fai)
                         )
                         print(
-                            " This will result in all STs being called as unknown (but allele calls will be accurate for other loci)."
+                            " This will result in all STs being called as unknown "
+                            "(but allele calls will be accurate for other loci)."
                         )
             else:
                 ST = line_split[0]
@@ -1554,7 +1579,8 @@ def read_file_sets(args):
                             + fastq
                         )
             else:
-                # matches default Illumina file naming format, e.g. m.groups() = ('samplename', '_S1', '_L001', '_R1', '_001')
+                # matches default Illumina file naming format,
+                # e.g. m.groups() = ('samplename', '_S1', '_L001', '_R1', '_001')
                 baseName, read = m.groups()[0], m.groups()[3]
                 if read == "_R1":
                     forward_reads[baseName] = fastq
@@ -1566,7 +1592,9 @@ def read_file_sets(args):
                         + fastq
                     )
                     logging.info(
-                        "  this file appears to match the MiSeq file naming convention (samplename_S1_L001_[R1]_001), but we were expecting [R1] or [R2] to designate read as forward or reverse?"
+                        "  this file appears to match the MiSeq file naming convention "
+                        "(samplename_S1_L001_[R1]_001), but we were expecting [R1] "
+                        "or [R2] to designate read as forward or reverse?"
                     )
                     fileSets[file_name_before_ext] = fastq
                     num_single_readsets += 1
@@ -1679,7 +1707,8 @@ def read_results_from_file(infile):
                                 )
                                 results["Sample"][
                                     "mlst"
-                                ] += "\tmaxMAF"  # add to mlst header even if not encountered in this file, as it may be in others
+                                ] += "\tmaxMAF"
+                                # add to mlst header even if not encountered in this file, as it may be in others
                                 if header[mlst_cols + 1] == "maxMAF":
                                     mlst_cols += 1  # record maxMAF column within MLST data, if present
                             else:
@@ -1704,7 +1733,8 @@ def read_results_from_file(infile):
                             if "maxMAF" not in header:
                                 results[sample][
                                     "mlst"
-                                ] += "\t"  # add to mlst section even if not encountered in this file, as it may be in others
+                                ] += "\t"
+                                # add to mlst section even if not encountered in this file, as it may be in others
                         if n_cols > mlst_cols:
                             # read genes component
                             for i in range(mlst_cols + 1, n_cols):
@@ -2406,11 +2436,9 @@ def main():
                 print("Created directory " + output_dir + " for output")
             except:
                 print(
-                    "Error. Specified output as "
-                    + args.output
-                    + " however the directory "
-                    + output_dir
-                    + " does not exist and our attempt to create one failed."
+                    "Error. Specified output as " + args.output +
+                    " however the directory " + output_dir +
+                    " does not exist and our attempt to create one failed."
                 )
 
     if args.log is True:
@@ -2462,16 +2490,13 @@ def main():
 
     # run MLST scoring
     if fileSets and args.mlst_db:
-
         if not args.mlst_definitions:
-
             # print warning to screen to alert user, may want to stop and restart
             print(
                 "Warning, MLST allele sequences were provided without ST definitions:"
             )
             print(" allele sequences: " + str(args.mlst_db))
             print(" these will be mapped and scored, but STs can not be calculated")
-
             # log
             logging.info(
                 "Warning, MLST allele sequences were provided without ST definitions:"
@@ -2485,17 +2510,13 @@ def main():
 
         # score file sets against MLST database
         mlst_report, mlst_results = run_srst2(args, fileSets, args.mlst_db, "mlst")
-
         logging.info("MLST output printed to " + mlst_report[0])
-
         # mlst_reports_files += mlst_report
         mlst_results_hashes += mlst_results
 
     # run gene detection
     if fileSets and args.gene_db:
-
         bowtie_index(args.gene_db)  # index the gene databases
-
         db_reports, db_results = run_srst2(args, fileSets, args.gene_db, "genes")
 
         for outfile in db_reports:
@@ -2505,19 +2526,13 @@ def main():
 
     # process prior results files
     if args.prev_output:
-
         unique_results_files = list(OrderedDict.fromkeys(args.prev_output))
-
         for results_file in unique_results_files:
-
             results, dbtype, dbname = read_results_from_file(results_file)
-
             if dbtype == "mlst":
                 mlst_results_hashes.append(results)
-
             elif dbtype == "genes":
                 gene_result_hashes.append(results)
-
             elif dbtype == "compiled":
                 # store mlst in its own db
                 mlst_results = {}
@@ -2539,7 +2554,6 @@ def main():
         logging.info(
             "One previous output file was provided, but there is no other data to compile with."
         )
-
     logging.info("SRST2 has finished.")
 
 
