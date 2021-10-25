@@ -368,19 +368,13 @@ def main():
 
     # read in results from prior results files
     if args.prev_output:
-
         unique_results_files = list(OrderedDict.fromkeys(args.prev_output))
-
         for results_file in unique_results_files:
-
             results, dbtype, dbname = read_results_from_file(results_file, False)
-
             if dbtype == "mlst":
                 mlst_results_hashes.append(results)
-
             elif dbtype == "genes":
                 gene_result_hashes.append(results)
-
             elif dbtype == "compiled":
                 # store mlst in its own db
                 mlst_results = {}
